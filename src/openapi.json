@@ -1,0 +1,203 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "AgentERC8004 — ERC-8004 AI Agent Identity x402 API",
+    "description": "Bridges ERC-8004 (Ethereum standard for AI agent identity and reputation) with x402 micropayments. Look up agent identities, browse registered agents, and retrieve registration templates — all from the Base mainnet on-chain registry.",
+    "version": "1.0.0",
+    "x-price": "$0.001",
+    "contact": {
+      "name": "Ocean Digital Group",
+      "url": "https://memoryapi.org"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://agent.memoryapi.org",
+      "description": "Production"
+    }
+  ],
+  "paths": {
+    "/x402/erc8004/agent": {
+      "get": {
+        "summary": "Look up an ERC-8004 agent by token ID",
+        "description": "Fetches the on-chain tokenURI for an ERC-8004 registered agent, decodes the registration file (base64 or HTTPS), and returns identity details including name, description, services, and x402 support status.",
+        "x-price": "$0.001",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "description": "Agent token ID (default: 1)",
+            "required": false,
+            "schema": { "type": "integer", "default": 1 }
+          },
+          {
+            "name": "chain",
+            "in": "query",
+            "description": "Chain identifier (default: base)",
+            "required": false,
+            "schema": { "type": "string", "default": "base" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Agent identity data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "agent_id": { "type": "integer" },
+                    "owner": { "type": "string" },
+                    "name": { "type": "string" },
+                    "description": { "type": "string" },
+                    "x402_support": { "type": "boolean" },
+                    "services": { "type": "array", "items": { "type": "object" } },
+                    "active": { "type": "boolean" },
+                    "raw_uri": { "type": "string" },
+                    "source": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "402": { "description": "Payment required" }
+        },
+        "security": [{ "x402": [] }]
+      }
+    },
+    "/x402/erc8004/browse": {
+      "get": {
+        "summary": "Browse ERC-8004 registered agents",
+        "description": "Scans a range of ERC-8004 agent token IDs and returns their registration summaries. Optionally filter to only agents with x402Support enabled.",
+        "x-price": "$0.001",
+        "parameters": [
+          {
+            "name": "x402only",
+            "in": "query",
+            "description": "Only return agents with x402Support: true",
+            "required": false,
+            "schema": { "type": "boolean", "default": false }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of agents to scan (max 50)",
+            "required": false,
+            "schema": { "type": "integer", "default": 20, "maximum": 50 }
+          },
+          {
+            "name": "start_id",
+            "in": "query",
+            "description": "Starting token ID",
+            "required": false,
+            "schema": { "type": "integer", "default": 1 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of agents",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "total_scanned": { "type": "integer" },
+                    "x402_enabled_count": { "type": "integer" },
+                    "agents": { "type": "array", "items": { "type": "object" } }
+                  }
+                }
+              }
+            }
+          },
+          "402": { "description": "Payment required" }
+        },
+        "security": [{ "x402": [] }]
+      }
+    },
+    "/x402/erc8004/register": {
+      "get": {
+        "summary": "Get ERC-8004 registration template for memoryapi.org",
+        "description": "Returns the ERC-8004 compatible registration JSON for memoryapi.org services, including all 28 MCP endpoints and x402Support: true. Use as a template for registering your own agent.",
+        "x-price": "$0.001",
+        "responses": {
+          "200": {
+            "description": "Registration JSON",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object" }
+              }
+            }
+          },
+          "402": { "description": "Payment required" }
+        },
+        "security": [{ "x402": [] }]
+      }
+    },
+    "/mcp": {
+      "get": {
+        "summary": "MCP server info",
+        "description": "Returns MCP server info and available tool names.",
+        "responses": {
+          "200": { "description": "MCP info" }
+        },
+        "security": []
+      },
+      "post": {
+        "summary": "MCP endpoint (JSON-RPC)",
+        "description": "MCP protocol endpoint. Supports: initialize, tools/list, tools/call. Tools: get_agent_identity, browse_erc8004_agents, get_registration_template.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "jsonrpc": { "type": "string" },
+                  "method": { "type": "string" },
+                  "params": { "type": "object" },
+                  "id": {}
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "JSON-RPC response" }
+        },
+        "security": []
+      }
+    },
+    "/.well-known/agent-registration.json": {
+      "get": {
+        "summary": "Our own ERC-8004 registration (free)",
+        "description": "The ERC-8004 registration file for agent.memoryapi.org. No payment required.",
+        "responses": {
+          "200": { "description": "Registration JSON" }
+        },
+        "security": []
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health check",
+        "description": "Service health status.",
+        "responses": {
+          "200": { "description": "OK" }
+        },
+        "security": []
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "x402": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Payment",
+        "description": "x402 micropayment — $0.001 USDC on Base (eip155:8453)"
+      }
+    }
+  }
+}
