@@ -2,3 +2,4 @@
 node_modules/
 *.log
 node_modules_x402
+*.pem
